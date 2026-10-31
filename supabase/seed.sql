@@ -1,4 +1,4 @@
--- Shelfwalk demo data. Safe to run more than once.
+-- Shelfwalk library data. Safe to run more than once.
 -- Run AFTER supabase/schema.sql.
 
 -- Starter catalogue: only inserted when the table is empty.
@@ -26,10 +26,7 @@ select v.* from (values
 ) as v(title, author, category, description, call_number, shelf, shelf_row, shelf_slot, cover_color, accent_color)
 where not exists (select 1 from public.library_books);
 
--- Demo-only accounts (fictional). Passwords are stored as scrypt hashes.
---   admin  / Shelfwalk2026!  (librarian)
---   reader / Reader2026!     (reader)
-insert into public.users (username, name, login_method, password_hash, role) values
-  ('admin',  'Demo Librarian', 'demo-only', 'shelfwalk-demo-admin-v1:0dc1476d50a6be521e4313662fd782dd403eecc1ea1134880ad57df8221391052f327d1e38e186febce212a4b1aa3a0747f53d90d85ab0778e211545434a9003', 'admin'),
-  ('reader', 'Demo Reader',    'demo-only', 'shelfwalk-demo-reader-v1:f6319471d0d2a8847a6483fbded91ef72bdb512792eab0f82ad90868f34aa40febec4a77982333364de793022681231162436c40378aab1705f5a8b493a6b4e7', 'user')
+-- Fixed librarian account. Replace its password hash with your institution's managed value before deployment.
+insert into public.users (username, name, login_method, email, password_hash, role) values
+  ('admin',  'Library Librarian', 'staff', 'admin@library.local', 'shelfwalk-fixed-admin-v1:0dc1476d50a6be521e4313662fd782dd403eecc1ea1134880ad57df8221391052f327d1e38e186febce212a4b1aa3a0747f53d90d85ab0778e211545434a9003', 'admin')
 on conflict (username) do nothing;

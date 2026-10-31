@@ -3,8 +3,8 @@ import { eq } from "drizzle-orm";
 import { users, type User } from "../db/schema.js";
 import { getDb } from "./db.js";
 
-export const DEMO_COOKIE = "shelfwalk_demo_session";
-export const DEMO_SESSION_SECONDS = 8 * 60 * 60;
+export const SESSION_COOKIE = "shelfwalk_session";
+export const SESSION_SECONDS = 8 * 60 * 60;
 
 function sessionKey() {
   const secret = process.env.SESSION_SECRET;
@@ -12,23 +12,22 @@ function sessionKey() {
   return new TextEncoder().encode(secret);
 }
 
-export async function createDemoSession(userId: number): Promise<string> {
-  return new SignJWT({ purpose: "shelfwalk-demo", userId })
+export async function createSession(userId: number): Promise<string> {
+  return new SignJWT({ purpose: "shelfwalk-session", userId })
     .setProtectedHeader({ alg: "HS256", typ: "JWT" })
     .setIssuedAt()
-    .setExpirationTime(`${DEMO_SESSION_SECONDS}s`)
+    .setExpirationTime(`${SESSION_SECONDS}s`)
     .sign(sessionKey());
 }
 
-export async function resolveDemoSession(token: string): Promise<User | null> {
+export async function resolveSession(token: string): Promise<User | null> {
   try {
     const { payload } = await jwtVerify(token, sessionKey(), { algorithms: ["HS256"] });
-    if (payload.purpose !== "shelfwalk-demo" || typeof payload.userId !== "number") return null;
+    if (payload.purpose !== "shelfwalk-session" || typeof payload.userId !== "number") return null;
     const db = getDb();
     if (!db) return null;
     const [user] = await db.select().from(users).where(eq(users.id, payload.userId)).limit(1);
-    if (!user || user.loginMethod !== "demo-only") return null;
-    return user;
+    return user ?? null;
   } catch {
     return null;
   }

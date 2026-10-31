@@ -4,7 +4,7 @@ import { Link } from "wouter";
 import type { LibraryBook } from "@/lib/libraryTypes";
 import { BookArtwork } from "./BookCard";
 
-export function BookDetailModal({ book, onClose, onBorrow, isBorrowing = false }: { book: LibraryBook; onClose: () => void; onBorrow?: (book: LibraryBook) => void; isBorrowing?: boolean }) {
+export function BookDetailModal({ book, onClose, onBorrow, isBorrowing = false, requested = false, canBorrow = true }: { book: LibraryBook; onClose: () => void; onBorrow?: (book: LibraryBook) => void; isBorrowing?: boolean; requested?: boolean; canBorrow?: boolean }) {
   useEffect(() => {
     const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
     window.addEventListener("keydown", closeOnEscape);
@@ -22,13 +22,13 @@ export function BookDetailModal({ book, onClose, onBorrow, isBorrowing = false }
           <p className="description">{book.description || "A title from the Shelfwalk university collection."}</p>
           <div className="detail-meta">
             <span><small>CALL NUMBER</small>{book.callNumber}</span>
-            <span><small>INVENTORY</small>{book.status === "available" ? "Available now" : "Currently lent"}</span>
+            <span><small>INVENTORY</small>{book.status === "available" ? `Available now · ${book.totalCopies} copies total` : "All copies currently lent"}</span>
             {book.isbn && <span><small>ISBN</small>{book.isbn}</span>}
             <span><small>SHELF LOCATION</small>Stack {book.shelf} · bay {book.shelfSlot + 1}</span>
           </div>
           <div className="detail-actions">
             <Link className="button button-primary" href={`/library?book=${book.id}`} onClick={() => localStorage.setItem("shelfwalk:focus-book", String(book.id))}><MapPin size={15} />Show it in the library</Link>
-            {onBorrow && <button type="button" className="button" onClick={() => onBorrow(book)} disabled={book.status !== "available" || isBorrowing}>{isBorrowing ? "Checking…" : book.status === "available" ? "Borrow for one week" : "Currently lent"}</button>}
+            {onBorrow && canBorrow && <button type="button" className="button" onClick={() => onBorrow(book)} disabled={book.status !== "available" || isBorrowing || requested}>{isBorrowing ? "Sending…" : requested ? "Requested" : book.status === "available" ? "Request for one week" : "Currently lent"}</button>}
           </div>
         </div>
       </div>

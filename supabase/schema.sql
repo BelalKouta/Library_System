@@ -5,7 +5,7 @@
 -- ---------- Enums ----------
 do $$ begin create type public.user_role        as enum ('user', 'admin');                      exception when duplicate_object then null; end $$;
 do $$ begin create type public.book_status      as enum ('available', 'lent');                  exception when duplicate_object then null; end $$;
-do $$ begin create type public.loan_status      as enum ('active', 'returned');                 exception when duplicate_object then null; end $$;
+do $$ begin create type public.loan_status      as enum ('pending', 'active', 'return_pending', 'returned', 'declined');                 exception when duplicate_object then null; end $$;
 do $$ begin create type public.extension_status as enum ('pending', 'approved', 'declined');    exception when duplicate_object then null; end $$;
 
 -- ---------- Tables ----------
@@ -13,13 +13,15 @@ create table if not exists public.users (
   id             serial primary key,
   username       varchar(40) unique,
   name           text,
-  email          varchar(320),
+  email          varchar(320) not null,
+  student_id     varchar(32) unique,
   login_method   varchar(64),
-  password_hash  varchar(160),
+  password_hash  varchar(200),
   role           public.user_role not null default 'user',
   created_at     timestamptz not null default now(),
   updated_at     timestamptz not null default now(),
-  last_signed_in timestamptz not null default now()
+  last_signed_in timestamptz not null default now(),
+  constraint users_student_id_format check (student_id is null or student_id ~ '^[0-9]{2}-[0-9]{6}$')
 );
 
 create table if not exists public.library_books (
@@ -36,6 +38,7 @@ create table if not exists public.library_books (
   cover_color  varchar(16)  not null default '#234663',
   accent_color varchar(16)  not null default '#C9B68A',
   status       public.book_status not null default 'available',
+  total_copies integer not null default 1 check (total_copies >= 1),
   created_at   timestamptz not null default now(),
   updated_at   timestamptz not null default now()
 );
@@ -53,9 +56,7 @@ create table if not exists public.library_loans (
 );
 create index if not exists library_loans_book_status on public.library_loans (book_id, status);
 create index if not exists library_loans_user_status on public.library_loans (user_id, status);
--- Database-level guarantee: a book can never have two active loans at once.
-create unique index if not exists library_loans_one_active_per_book
-  on public.library_loans (book_id) where status = 'active';
+-- Multiple copies of a catalogue title may have simultaneous active loans.
 
 create table if not exists public.library_extensions (
   id           serial primary key,
@@ -73,7 +74,7 @@ create index if not exists library_extensions_status on public.library_extension
 -- Supabase exposes every table in the public schema through its REST API using the
 -- public "anon" key. Shelfwalk never uses that API: the app talks to Postgres directly
 -- from its server functions. Turning on Row Level Security with NO policies blocks all
--- access through the public API (this protects the demo password hashes), while the
+-- access through the public API (this protects the stored password hashes), while the
 -- server's direct database connection keeps working.
 alter table public.users              enable row level security;
 alter table public.library_books      enable row level security;

@@ -19,7 +19,7 @@ export function isSecureRequest(req: Request): boolean {
 }
 
 export function serializeCookie(name: string, value: string, options: { maxAgeSeconds: number; secure: boolean }): string {
-  const parts = [`${name}=${encodeURIComponent(value)}`, "Path=/", "HttpOnly", "SameSite=Lax", `Max-Age=${Math.floor(options.maxAgeSeconds)}`];
+  const parts = [`${name}=${encodeURIComponent(value)}`, "Path=/", "HttpOnly", options.secure ? "SameSite=None" : "SameSite=Lax", `Max-Age=${Math.floor(options.maxAgeSeconds)}`];
   if (options.maxAgeSeconds <= 0) parts.push("Expires=Thu, 01 Jan 1970 00:00:00 GMT");
   if (options.secure) parts.push("Secure");
   return parts.join("; ");

@@ -1,26 +1,28 @@
 // Drizzle mirror of supabase/schema.sql. If you change one, change the other.
-import { index, integer, pgEnum, pgTable, serial, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/pg-core";
+import { check, index, integer, pgEnum, pgTable, serial, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 export const userRole = pgEnum("user_role", ["user", "admin"]);
 export const bookStatus = pgEnum("book_status", ["available", "lent"]);
-export const loanStatus = pgEnum("loan_status", ["active", "returned"]);
+export const loanStatus = pgEnum("loan_status", ["pending", "active", "return_pending", "returned", "declined"]);
 export const extensionStatus = pgEnum("extension_status", ["pending", "approved", "declined"]);
 
 const ts = (name: string) => timestamp(name, { withTimezone: true, mode: "date" });
 
-/** Application identity table. Only clearly marked demo accounts are used today. */
+/** Application identity table for students and fixed librarian accounts. */
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: varchar("username", { length: 40 }).unique(),
   name: text("name"),
-  email: varchar("email", { length: 320 }),
+  email: varchar("email", { length: 320 }).notNull(),
+  studentId: varchar("student_id", { length: 32 }).unique(),
   loginMethod: varchar("login_method", { length: 64 }),
-  passwordHash: varchar("password_hash", { length: 160 }),
+  passwordHash: varchar("password_hash", { length: 200 }),
   role: userRole("role").default("user").notNull(),
   createdAt: ts("created_at").defaultNow().notNull(),
   updatedAt: ts("updated_at").defaultNow().notNull().$onUpdate(() => new Date()),
   lastSignedIn: ts("last_signed_in").defaultNow().notNull(),
-});
+}, (t) => [check("users_student_id_format", sql`${t.studentId} IS NULL OR ${t.studentId} ~ '^[0-9]{2}-[0-9]{6}$'`)]);
 
 export const libraryBooks = pgTable("library_books", {
   id: serial("id").primaryKey(),
@@ -36,6 +38,7 @@ export const libraryBooks = pgTable("library_books", {
   coverColor: varchar("cover_color", { length: 16 }).notNull().default("#234663"),
   accentColor: varchar("accent_color", { length: 16 }).notNull().default("#C9B68A"),
   status: bookStatus("status").notNull().default("available"),
+  totalCopies: integer("total_copies").notNull().default(1),
   createdAt: ts("created_at").defaultNow().notNull(),
   updatedAt: ts("updated_at").defaultNow().notNull().$onUpdate(() => new Date()),
 }, (t) => [index("library_books_shelf_position").on(t.shelfRow, t.shelfSlot)]);

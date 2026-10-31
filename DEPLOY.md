@@ -50,7 +50,7 @@ git push -u origin main
 
 1. Open `https://<your-project>.vercel.app/api/health`. Expected:
    `{"status":"ok","database":"connected","sessionSecret":true}`
-2. Open the site → **Demo sign in** → Reader → **Browse books** → borrow a title → **My loans** → request an extension.
+2. Open the site → **Sign in** → create a student account → **Browse books** → request a title → have the librarian approve it → **My loans**.
 3. Sign out, sign in as Librarian → **Librarian** → approve the extension.
 4. Refresh on `/library` and `/loans`; they should load (not 404).
 
@@ -61,12 +61,12 @@ git push -u origin main
 | `/api/health` → `"database":"not-configured"` | `DATABASE_URL` is missing. Add it in Vercel, then **Redeploy** (env changes only apply to new deployments). |
 | `"database":"unreachable"` | Wrong password, or you used the Direct connection. Re-copy the **Transaction pooler** string. Check Vercel → Logs. |
 | `"sessionSecret":false` | `SESSION_SECRET` is missing or shorter than 16 characters. |
-| Demo sign-in says "credentials did not match" | `seed.sql` didn't run. Check the `users` table has `admin` and `reader`. |
+| Account access says "credentials did not match" | `seed.sql` didn't run. Check the `users` table has `admin` and `reader`. |
 | Sign-in works then logs out immediately | `SESSION_SECRET` changed between deployments; sign in again. |
 | Build fails at install | Make sure `pnpm-lock.yaml` is committed, or keep the `installCommand` in `vercel.json`. |
 | 3D room is blank on a phone | Test on a real device; WebGL is required. The Browse books page works without it. |
 
-## Resetting the demo data
+## Resetting the library data
 
 In the SQL Editor:
 ```sql
